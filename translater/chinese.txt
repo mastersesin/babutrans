@@ -1,0 +1,50 @@
+
+#---08/08/2023 16:53:04 ~~ Filename: input/ai_hadaba_small.lua--- ~~ BatchId: bcf5eb69-fef3-4859-b6be-9b33f657633e
+
+#---08/08/2023 16:53:10 ~~ Filename: input/ai_liqiushui_small.lua--- ~~ BatchId: 8d89bac2-2d2b-4459-919e-04153241b0c6
+
+#---08/08/2023 16:53:10 ~~ Filename: input/epmf_reset_count.lua--- ~~ BatchId: 6b473f67-1a42-4773-af3a-518624307ebc
+确定
+取消
+
+#---08/08/2023 16:53:11 ~~ Filename: input/ai_zhuobufan_small.lua--- ~~ BatchId: 86ab392e-6e61-4144-9e9b-5240362fecef
+不平道人
+
+#---08/08/2023 16:53:11 ~~ Filename: input/ai_wulaoda_small.lua--- ~~ BatchId: c394b123-0c04-4908-87e0-2f4a0a34e766
+
+#---08/08/2023 16:53:12 ~~ Filename: input/epiaomiaofeng_small.lua--- ~~ BatchId: ff3e8140-165a-415f-81f3-c97353a98bd0
+万仙之首
+万仙之首
+万仙之首
+剑神
+蛟王
+神秘女子
+初战缥缈峰
+队伍当中的
+的修为尚浅，还是不要去为妙。
+本日已经挑战过10次缥缈峰了。
+副本创建成功
+副本数量已达上限，请稍候再试
+副本将在1秒后关闭。
+副本将在2秒后关闭。
+副本将在3秒后关闭。
+副本将在4秒后关闭。
+副本将在5秒后关闭。
+副本将在10秒后关闭。
+副本将在30秒后关闭。
+副本将在1分钟后关闭。
+副本将在2分钟后关闭。
+副本将在3分钟后关闭。
+副本将在5分钟后关闭。
+副本将在15分钟后关闭。
+副本将在30分钟后关闭。
+副本将在60分钟后关闭。
+正与
+战斗中
+
+#---08/08/2023 16:53:13 ~~ Filename: input/ai_sangtugong_small.lua--- ~~ BatchId: 6c0878b8-c0b2-4c86-a1f6-9d635f0e2f72
+碧磷僵尸
+
+#---08/08/2023 16:53:13 ~~ Filename: input/ai_bupingdaoren_small.lua--- ~~ BatchId: 9dc71313-d016-4d22-a43d-223e0de115b9
+不平道人
+卓不凡
