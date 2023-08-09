@@ -1,1 +1,434 @@
---Piao Miao Peak Unjust Taoist AI--F [Dark Thunder] Use an empty skill on yourself...then add a buff to the player that will call back the script after the end...When calling back, let the BOSS add a typhoid buff to the people around it and shout...--G [Actuary] Use a buff skill for yourself....--H [Fireworks] Use an empty skill on yourself...add a buff to the player that will call back the script after the end...call back...--I [Friend] When Zhuo Bufan dies, use a buff skill for himself....--The whole process has buffs that are immune to formulating skills....-- Randomly use FH on random players every 30 seconds....-- Use G on yourself every 45 seconds....--Clear FH buffs for all players when dying or leaving battle....--Looking for the Injustice when dying....Setting it requires the use of violent skills....--When you die, you find that the Injustice is dead...and then create another BOSS....--script numberx402281_g_ScriptId	= 402281--Copy logic script number....x402281_g_FuBenScriptId = 402276--Immunity Buff....x402281_Buff_MianYi1	= 10472	-- Immune to some negative effects....x402281_Buff_MianYi2	= 10471	-- Immune to normal invisibility....--Skill....x402281_SkillID_F		= 1037x402281_BuffID_F1		= 19806	--Call back the script of the simple version of Misty Peak....x402281_BuffID_F2		= 19807	--The simple version of Misty Peak uses a version with reduced damage....x402281_SkillID_G		= 1038x402281_SkillID_H		= 1037x402281_BuffID_H		= 19899	--Call back the script of the simple version of Misty Peak....x402281_SkillID_I		= 1036x402281_BuffID_I1		= 10253x402281_BuffID_I2		= 10254x402281_SkillCD_FH	=	30000x402281_SkillCD_G		=	45000x402281_MyName			= "B B靚h 姓o Nh鈔"	--Own name....x402281_BrotherName = "Tr醕 B Ph鄊"		--brother's name....--AI Index....x402281_IDX_KuangBaoMode	= 1	--Rage mode....0 is not berserk 1 needs to be berserk 2 has been berserkx402281_IDX_CD_SkillFH		= 2	--CD of FH skills....x402281_IDX_CD_SkillG			= 3	--G skill CD....x402281_IDX_CD_Talk				= 4	--CD of FH skill shout....x402281_IDX_CombatFlag 		= 1	--Whether it is a sign of combat status....--**********************************--initialization....--**********************************function x402281_OnInit(sceneId, selfId)	--Reset AI....	x402281_ResetMyAI( sceneId, selfId )end--**********************************--heartbeat....--**********************************function x402281_OnHeartBeat(sceneId, selfId, nTick)	-- Check if it is dead....	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then		return	end	-- Check if not in combat state....	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag ) then		return	end	--FH skill heartbeat....	if 1 == x402281_TickSkillFH( sceneId, selfId, nTick ) then		return	end	--G skill heartbeat....	if 1 == x402281_TickSkillG( sceneId, selfId, nTick ) then		return	end	--I skill heartbeat....	if 1 == x402281_TickSkillI( sceneId, selfId, nTick ) then		return	endend--**********************************-- enter the battle....--**********************************function x402281_OnEnterCombat(sceneId, selfId, enmeyId)	--Add initial buff....	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_Buff_MianYi1, 0 )	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_Buff_MianYi2, 0 )	--Reset AI....	x402281_ResetMyAI( sceneId, selfId )	--Set to enter the combat state....	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag, 1 )end--**********************************--leave the fight....--**********************************function x402281_OnLeaveCombat(sceneId, selfId)	--Reset AI....	x402281_ResetMyAI( sceneId, selfId )	--Traverse all the monsters in the scene....find brothers and delete them....	local nMonsterNum = GetMonsterCount(sceneId)	for i=0, nMonsterNum-1 do		local MonsterId = GetMonsterObjID(sceneId,i)		if x402281_BrotherName == GetName( sceneId, MonsterId ) then			LuaFnDeleteMonster( sceneId, MonsterId )		end	end	--delete self....	LuaFnDeleteMonster( sceneId, selfId )end--**********************************-- kill enemies....--**********************************function x402281_OnKillCharacter(sceneId, selfId, targetId)end--**********************************--die....--**********************************function x402281_OnDie( sceneId, selfId, killerId )	--Reset AI....	x402281_ResetMyAI( sceneId, selfId )	local bFind = 0	--Traverse all the monsters in the scene...to find brothers...to set them to use berserk skills....	local nMonsterNum = GetMonsterCount(sceneId)	for i=0, nMonsterNum-1 do		local MonsterId = GetMonsterObjID(sceneId,i)		if x402281_BrotherName == GetName( sceneId, MonsterId ) and LuaFnIsCharacterLiving(sceneId, MonsterId) == 1 then			bFind = 1			MonsterAI_SetIntParamByIndex( sceneId, MonsterId, x402281_IDX_KuangBaoMode, 1 )		end	end	--If you don't find a brother, it means you are the only one left....	if 0 == bFind then		--Create Duanmu element....		local MstId = CallScriptFunction( x402281_g_FuBenScriptId, "CreateBOSS", sceneId, "DuanMuYuan_BOSS", -1, -1 )		LuaFnNpcChat(sceneId, MstId, 0, "#{PMF_20080521_18}")		--The setting has already challenged Gemini....		CallScriptFunction( x402281_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "ShuangZi", 2 )	endend--**********************************--Reset AI....--**********************************function x402281_ResetMyAI( sceneId, selfId )	--reset parameters....	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode, 0 )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, x402281_SkillCD_FH )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, x402281_SkillCD_G )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_Talk, 0 )	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag, 0 )	--Clear FH buffs for all players....	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 then			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402281_BuffID_F1 )			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402281_BuffID_H )		end	endend--**********************************--FH skill heartbeat....--**********************************function x402281_TickSkillFH( sceneId, selfId, nTick )	--Update skill CD....	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH )	if cd > nTick then		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, cd-nTick )		return 0	else		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, x402281_SkillCD_FH-(nTick-cd) )		-- Randomly use FH....		if random(100) < 50 then			return x402281_UseSkillF( sceneId, selfId )		else			return x402281_UseSkillH( sceneId, selfId )		end	endend--**********************************--G skill heartbeat....--**********************************function x402281_TickSkillG( sceneId, selfId, nTick )	--Update skill CD....	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG )	if cd > nTick then		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, cd-nTick )		return 0	else		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, x402281_SkillCD_G-(nTick-cd) )		return x402281_UseSkillG( sceneId, selfId )	endend--**********************************--I skill heartbeat....--**********************************function x402281_TickSkillI( sceneId, selfId, nTick )	--Get current berserk mode....	local CurMode = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode )	if CurMode == 0 or CurMode == 2 then		--Return if no berserk or already berserk....		return 0	elseif CurMode == 1 then		--Use the berserk skill if you need to be berserk....		local ret =  x402281_UseSkillI( sceneId, selfId )		if ret == 1 then			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode, 2 )			return 1		else			return 0		end	endend--**********************************-- Use F skill....--**********************************function x402281_UseSkillF( sceneId, selfId )	-- List of active players in the instance....	local PlayerList = {}	-- Add valid people to the list....	local numPlayer = 0	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then			PlayerList[numPlayer+1] = nHumanId			numPlayer = numPlayer + 1		end	end	-- Randomly pick a player....	if numPlayer <= 0 then		return 0	end	local PlayerId = PlayerList[ random(numPlayer) ]	-- Use empty skills on yourself....	local x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_F, selfId, x, z, 0, 1 )	-- Add the buff of the callback script after the player is finished....	LuaFnSendSpecificImpactToUnit( sceneId, PlayerId, PlayerId, PlayerId, x402281_BuffID_F1, 0 )	return 1end--**********************************-- Use G skills....--**********************************function x402281_UseSkillG( sceneId, selfId )	local x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_G, selfId, x, z, 0, 1 )	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_01}" )	return 1end--**********************************-- Use H skills....--**********************************function x402281_UseSkillH( sceneId, selfId )	-- List of active players in the instance....	local PlayerList = {}	-- Add valid people to the list....	local numPlayer = 0	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then			PlayerList[numPlayer+1] = nHumanId			numPlayer = numPlayer + 1		end	end	-- Randomly pick a player....	if numPlayer <= 0 then		return 0	end	local PlayerId = PlayerList[ random(numPlayer) ]	-- Use empty skills on yourself....	local x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_H, selfId, x, z, 0, 1 )	-- Add the buff of the callback script after the player is finished....	LuaFnSendSpecificImpactToUnit( sceneId, PlayerId, PlayerId, PlayerId, x402281_BuffID_H, 0 )	return 1end--**********************************-- Use I skills....--**********************************function x402281_UseSkillI( sceneId, selfId )	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_BuffID_I1, 5000 )	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_BuffID_I2, 5000 )	local x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_I, selfId, x, z, 0, 1 )	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_02}" )	return 1end--**********************************--Call back this interface when the buff of Dark Thunder and Firework ends....--**********************************function x402281_OnImpactFadeOut( sceneId, selfId, impactId )	--Looking for BOSS....	local bossId = -1	local nMonsterNum = GetMonsterCount(sceneId)	for i=0, nMonsterNum-1 do		local MonsterId = GetMonsterObjID(sceneId,i)		if x402281_MyName == GetName( sceneId, MonsterId ) then			bossId = MonsterId		end	end	-- return if not found....	if bossId == -1 then		return	end	--If it is the buff of fireworks, let the boss shout....	if impactId == x402281_BuffID_H then		MonsterTalk( sceneId, -1, "", "#{PMF_20080530_03}"..GetName( sceneId, selfId ).."#{PMF_20080530_04}" )		return	end	--If it is the buff of Dark Thunder...then ask the BOSS to add a damage buff to nearby players and shout...	if impactId == x402281_BuffID_F1 then		MonsterTalk( sceneId, -1, "", "#{PMF_20080530_03}"..GetName( sceneId, selfId ).."#{PMF_20080530_05}" )		local x = 0		local z = 0		local xx = 0		local zz = 0		x,z = GetWorldPos( sceneId,selfId )		local nHumanNum = LuaFnGetCopyScene_HumanCount(sceneId)		for i=0, nHumanNum-1  do			local PlayerId = LuaFnGetCopyScene_HumanObjId(sceneId, i)			if LuaFnIsObjValid(sceneId, PlayerId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, PlayerId) == 1 and LuaFnIsCharacterLiving(sceneId, PlayerId) == 1 and PlayerId ~= selfId then				xx,zz = GetWorldPos(sceneId,PlayerId)				if (x-xx)*(x-xx) + (z-zz)*(z-zz) < 8*8 then					LuaFnSendSpecificImpactToUnit( sceneId, bossId, bossId, PlayerId, x402281_BuffID_F2, 0 )				end			end		end		return	endend
+--飘渺峰 不平道人AI
+
+--F	【暗雷】对自己用一个空技能....再给玩家加个结束后会回调脚本的buff....回调时让BOSS给其周围人加伤寒buff并喊话....
+--G 【精算】给自己用一个加buff的技能....
+--H 【烟花】对自己用一个空技能....再给玩家加个结束后会回调脚本的buff....回调时喊话....
+--I	【朋友】卓不凡死时给自己用一个加buff的技能....
+
+
+--全程都带有免疫制定技能的buff....
+--每隔30秒对随机玩家随机使用FH....
+--每隔45秒对自己使用G....
+--死亡或脱离战斗时给所有玩家清除FH的buff....
+--死亡时寻找不平道人....设置其需要使用狂暴技能....
+--死亡时发现不平道人已经死了....则创建另一个BOSS....
+
+
+--脚本号
+x402281_g_ScriptId	= 402281
+
+--副本逻辑脚本号....
+x402281_g_FuBenScriptId = 402276
+
+--免疫Buff....
+x402281_Buff_MianYi1	= 10472	--免疫一些负面效果....
+x402281_Buff_MianYi2	= 10471	--免疫普通隐身....
+
+--技能....
+x402281_SkillID_F		= 1037
+x402281_BuffID_F1		= 19806	--回调简单版缥缈峰的脚本....
+x402281_BuffID_F2		= 19807	--简单版缥缈峰使用伤害降低了的版本....
+x402281_SkillID_G		= 1038
+x402281_SkillID_H		= 1037
+x402281_BuffID_H		= 19899	--回调简单版缥缈峰的脚本....
+x402281_SkillID_I		= 1036
+x402281_BuffID_I1		= 10253
+x402281_BuffID_I2		= 10254
+
+x402281_SkillCD_FH	=	30000
+x402281_SkillCD_G		=	45000
+
+
+x402281_MyName			= "不平道人"	--自己的名字....
+x402281_BrotherName = "卓不凡"		--兄弟的名字....
+
+
+--AI Index....
+x402281_IDX_KuangBaoMode	= 1	--狂暴模式....0未狂暴 1需要进入狂暴 2已经进入狂暴
+x402281_IDX_CD_SkillFH		= 2	--FH技能的CD....
+x402281_IDX_CD_SkillG			= 3	--G技能的CD....
+x402281_IDX_CD_Talk				= 4	--FH技能喊话的CD....
+
+x402281_IDX_CombatFlag 		= 1	--是否处于战斗状态的标志....
+
+
+--**********************************
+--初始化....
+--**********************************
+function x402281_OnInit(sceneId, selfId)
+	--重置AI....
+	x402281_ResetMyAI( sceneId, selfId )
+end
+
+
+--**********************************
+--心跳....
+--**********************************
+function x402281_OnHeartBeat(sceneId, selfId, nTick)
+
+	--检测是不是死了....
+	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then
+		return
+	end
+
+	--检测是否不在战斗状态....
+	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag ) then
+		return
+	end
+
+	--FH技能心跳....
+	if 1 == x402281_TickSkillFH( sceneId, selfId, nTick ) then
+		return
+	end
+
+	--G技能心跳....
+	if 1 == x402281_TickSkillG( sceneId, selfId, nTick ) then
+		return
+	end
+
+	--I技能心跳....
+	if 1 == x402281_TickSkillI( sceneId, selfId, nTick ) then
+		return
+	end
+
+end
+
+
+--**********************************
+--进入战斗....
+--**********************************
+function x402281_OnEnterCombat(sceneId, selfId, enmeyId)
+
+	--加初始buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_Buff_MianYi1, 0 )
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_Buff_MianYi2, 0 )
+
+	--重置AI....
+	x402281_ResetMyAI( sceneId, selfId )
+
+	--设置进入战斗状态....
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag, 1 )
+
+end
+
+
+--**********************************
+--离开战斗....
+--**********************************
+function x402281_OnLeaveCombat(sceneId, selfId)
+
+	--重置AI....
+	x402281_ResetMyAI( sceneId, selfId )
+
+	--遍历场景里所有的怪....寻找兄弟并将其删除....
+	local nMonsterNum = GetMonsterCount(sceneId)
+	for i=0, nMonsterNum-1 do
+		local MonsterId = GetMonsterObjID(sceneId,i)
+		if x402281_BrotherName == GetName( sceneId, MonsterId ) then
+			LuaFnDeleteMonster( sceneId, MonsterId )
+		end
+	end
+
+	--删除自己....
+	LuaFnDeleteMonster( sceneId, selfId )
+
+end
+
+
+--**********************************
+--杀死敌人....
+--**********************************
+function x402281_OnKillCharacter(sceneId, selfId, targetId)
+
+end
+
+
+--**********************************
+--死亡....
+--**********************************
+function x402281_OnDie( sceneId, selfId, killerId )
+
+	--重置AI....
+	x402281_ResetMyAI( sceneId, selfId )
+
+	local bFind = 0
+
+	--遍历场景里所有的怪....寻找兄弟....给其设置需要使用狂暴技能....
+	local nMonsterNum = GetMonsterCount(sceneId)
+	for i=0, nMonsterNum-1 do
+		local MonsterId = GetMonsterObjID(sceneId,i)
+		if x402281_BrotherName == GetName( sceneId, MonsterId ) and LuaFnIsCharacterLiving(sceneId, MonsterId) == 1 then
+			bFind = 1
+			MonsterAI_SetIntParamByIndex( sceneId, MonsterId, x402281_IDX_KuangBaoMode, 1 )
+		end
+	end
+
+	--如果没找到兄弟则说明就剩自己一个了....
+	if 0 == bFind then
+		--创建端木元....
+		local MstId = CallScriptFunction( x402281_g_FuBenScriptId, "CreateBOSS", sceneId, "DuanMuYuan_BOSS", -1, -1 )
+		LuaFnNpcChat(sceneId, MstId, 0, "#{PMF_20080521_18}")
+		--设置已经挑战过双子....
+		CallScriptFunction( x402281_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "ShuangZi", 2 )
+	end
+
+end
+
+
+--**********************************
+--重置AI....
+--**********************************
+function x402281_ResetMyAI( sceneId, selfId )
+
+	--重置参数....
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode, 0 )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, x402281_SkillCD_FH )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, x402281_SkillCD_G )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_Talk, 0 )
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402281_IDX_CombatFlag, 0 )
+
+	--给所有玩家清除FH的buff....
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 then
+			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402281_BuffID_F1 )
+			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402281_BuffID_H )
+		end
+	end
+
+end
+
+
+--**********************************
+--FH技能心跳....
+--**********************************
+function x402281_TickSkillFH( sceneId, selfId, nTick )
+
+	--更新技能CD....
+	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH )
+	if cd > nTick then
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, cd-nTick )
+		return 0
+
+	else
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillFH, x402281_SkillCD_FH-(nTick-cd) )
+
+		--随机使用FH....
+		if random(100) < 50 then
+			return x402281_UseSkillF( sceneId, selfId )
+		else
+			return x402281_UseSkillH( sceneId, selfId )
+		end
+
+	end
+
+end
+
+
+--**********************************
+--G技能心跳....
+--**********************************
+function x402281_TickSkillG( sceneId, selfId, nTick )
+
+	--更新技能CD....
+	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG )
+	if cd > nTick then
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, cd-nTick )
+		return 0
+	else
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_CD_SkillG, x402281_SkillCD_G-(nTick-cd) )
+		return x402281_UseSkillG( sceneId, selfId )
+	end
+
+end
+
+
+--**********************************
+--I技能心跳....
+--**********************************
+function x402281_TickSkillI( sceneId, selfId, nTick )
+
+	--获得当前狂暴mode....
+	local CurMode = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode )
+
+	if CurMode == 0 or CurMode == 2 then
+
+		--如果不需要狂暴或者已经狂暴了则返回....
+		return 0
+
+	elseif CurMode == 1 then
+
+		--如果需要狂暴则使用狂暴技能....
+		local ret =  x402281_UseSkillI( sceneId, selfId )
+		if ret == 1 then
+			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402281_IDX_KuangBaoMode, 2 )
+			return 1
+		else
+			return 0
+		end
+
+	end
+
+end
+
+
+--**********************************
+--使用F技能....
+--**********************************
+function x402281_UseSkillF( sceneId, selfId )
+
+	--副本中有效的玩家的列表....
+	local PlayerList = {}
+
+	--将有效的人加入列表....
+	local numPlayer = 0
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then
+			PlayerList[numPlayer+1] = nHumanId
+			numPlayer = numPlayer + 1
+		end
+	end
+
+	--随机挑选一个玩家....
+	if numPlayer <= 0 then
+		return 0
+	end
+	local PlayerId = PlayerList[ random(numPlayer) ]
+
+	--对自己使用空技能....
+	local x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_F, selfId, x, z, 0, 1 )
+
+	--给玩家加结束后回调脚本的buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, PlayerId, PlayerId, PlayerId, x402281_BuffID_F1, 0 )
+
+	return 1
+
+end
+
+
+--**********************************
+--使用G技能....
+--**********************************
+function x402281_UseSkillG( sceneId, selfId )
+
+	local x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_G, selfId, x, z, 0, 1 )
+	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_01}" )
+	return 1
+
+end
+
+
+--**********************************
+--使用H技能....
+--**********************************
+function x402281_UseSkillH( sceneId, selfId )
+
+	--副本中有效的玩家的列表....
+	local PlayerList = {}
+
+	--将有效的人加入列表....
+	local numPlayer = 0
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then
+			PlayerList[numPlayer+1] = nHumanId
+			numPlayer = numPlayer + 1
+		end
+	end
+
+	--随机挑选一个玩家....
+	if numPlayer <= 0 then
+		return 0
+	end
+	local PlayerId = PlayerList[ random(numPlayer) ]
+
+	--对自己使用空技能....
+	local x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_H, selfId, x, z, 0, 1 )
+
+	--给玩家加结束后回调脚本的buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, PlayerId, PlayerId, PlayerId, x402281_BuffID_H, 0 )
+
+	return 1
+
+end
+
+
+--**********************************
+--使用I技能....
+--**********************************
+function x402281_UseSkillI( sceneId, selfId )
+
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_BuffID_I1, 5000 )
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402281_BuffID_I2, 5000 )
+
+	local x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402281_SkillID_I, selfId, x, z, 0, 1 )
+
+	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_02}" )
+
+	return 1
+
+end
+
+
+--**********************************
+--暗雷和烟花的buff结束的时候回调本接口....
+--**********************************
+function x402281_OnImpactFadeOut( sceneId, selfId, impactId )
+
+	--寻找BOSS....
+	local bossId = -1
+	local nMonsterNum = GetMonsterCount(sceneId)
+	for i=0, nMonsterNum-1 do
+		local MonsterId = GetMonsterObjID(sceneId,i)
+		if x402281_MyName == GetName( sceneId, MonsterId ) then
+			bossId = MonsterId
+		end
+	end
+
+	--没找到则返回....
+	if bossId == -1 then
+		return
+	end
+
+	--如果是烟花的buff则让BOSS喊话....
+	if impactId == x402281_BuffID_H then
+		MonsterTalk( sceneId, -1, "", "#{PMF_20080530_03}"..GetName( sceneId, selfId ).."#{PMF_20080530_04}" )
+		return
+	end
+
+	--如果是暗雷的buff....则让BOSS给附近的玩家加一个伤害的buff并喊话....
+	if impactId == x402281_BuffID_F1 then
+
+		MonsterTalk( sceneId, -1, "", "#{PMF_20080530_03}"..GetName( sceneId, selfId ).."#{PMF_20080530_05}" )
+
+		local x = 0
+		local z = 0
+		local xx = 0
+		local zz = 0
+		x,z = GetWorldPos( sceneId,selfId )
+		local nHumanNum = LuaFnGetCopyScene_HumanCount(sceneId)
+		for i=0, nHumanNum-1  do
+			local PlayerId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+			if LuaFnIsObjValid(sceneId, PlayerId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, PlayerId) == 1 and LuaFnIsCharacterLiving(sceneId, PlayerId) == 1 and PlayerId ~= selfId then
+				xx,zz = GetWorldPos(sceneId,PlayerId)
+				if (x-xx)*(x-xx) + (z-zz)*(z-zz) < 8*8 then
+					LuaFnSendSpecificImpactToUnit( sceneId, bossId, bossId, PlayerId, x402281_BuffID_F2, 0 )
+				end
+			end
+		end
+
+		return
+
+	end
+
+end

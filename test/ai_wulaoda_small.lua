@@ -1,1 +1,361 @@
---Piao Miao Peak Wu Boss AI--A Golden Lantern Ten Thousand LightsPoison attribute group attack....--B [Paralyzing Poison] Ordinary skills...in the whole copy, randomly pick a person to release empty skills on it...and then add a buff to it....--C [Green Wave Fragrance] Use an empty skill on yourself...and put a trap at the foot of the current enemy....--D [Toxic transformation] Add a buff to everyone in the whole copy every 5 seconds....--The whole process has buffs that are immune to formulating skills....--After 20 seconds, the ABC skills will be released cyclically....Cool down for 20 seconds....-- Use D...every 5 seconds--Boss death or leaving the battle will clear the buff of D for everyone....--script numberx402279_g_ScriptId	= 402279--Copy logic script number....x402279_g_FuBenScriptId = 402276--Immunity Buff....x402279_Buff_MianYi1	= 10472	-- Immune to some negative effects....x402279_Buff_MianYi2	= 10471	-- Immune to normal invisibility....--ABC skills....x402279_SkillA			= 1111	--The simple version of Misty Peak uses a version with reduced damage....x402279_SkillB			= 1112	--The simple version of Misty Peak uses a version with reduced damage....x402279_BuffB				= 19803	--The simple version of Misty Peak uses a version with reduced damage....x402279_SkillC			= 1113	--The simple version of Misty Peak uses a version with reduced damage....x402279_SpeObjC			= 72	--The simple version of Misty Peak uses a version with reduced damage....x402279_SkillABC_CD	=	20000--D skill....x402279_BuffD				= 19801	--The simple version of Misty Peak uses a version with reduced damage....x402279_SkillD_CD		= 5000--AI Index....x402279_IDX_CD_SkillABC		= 1	--ABC skill CD....x402279_IDX_CurSkillIndex	= 2	--Which skill in ABC should I use next....x402279_IDX_CD_SkillD			= 3	--CD of skill D....x402279_IDX_CombatFlag 		= 1	--Whether it is a sign of combat status....--**********************************--initialization....--**********************************function x402279_OnInit(sceneId, selfId)	--Reset AI....	x402279_ResetMyAI( sceneId, selfId )end--**********************************--heartbeat....--**********************************function x402279_OnHeartBeat(sceneId, selfId, nTick)	-- Check if it is dead....	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then		return	end	-- Check if not in combat state....	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag ) then		return	end	--ABC skill heartbeat....	if 1 == x402279_TickSkillABC( sceneId, selfId, nTick ) then		return	end	--D skill heartbeat....	if 1 == x402279_TickSkillD( sceneId, selfId, nTick ) then		return	endend--**********************************-- enter the battle....--**********************************function x402279_OnEnterCombat(sceneId, selfId, enmeyId)	--Add initial buff....	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402279_Buff_MianYi1, 0 )	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402279_Buff_MianYi2, 0 )	--Reset AI....	x402279_ResetMyAI( sceneId, selfId )	--Set to enter the combat state....	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag, 1 )end--**********************************--leave the fight....--**********************************function x402279_OnLeaveCombat(sceneId, selfId)	--Reset AI....	x402279_ResetMyAI( sceneId, selfId )	--delete self....	LuaFnDeleteMonster( sceneId, selfId )	--Create a dialogue NPC....	local MstId = CallScriptFunction( x402279_g_FuBenScriptId, "CreateBOSS", sceneId, "WuLaoDa_NPC", -1, -1 )	SetUnitReputationID( sceneId, MstId, MstId, 0 )end--**********************************-- kill enemies....--**********************************function x402279_OnKillCharacter(sceneId, selfId, targetId)end--**********************************--die....--**********************************function x402279_OnDie( sceneId, selfId, killerId )	--Reset AI....	x402279_ResetMyAI( sceneId, selfId )	--delete self....	SetCharacterDieTime( sceneId, selfId, 3000 )	--Start the timer for the death of Boss Wu....	local x,z = GetWorldPos( sceneId, selfId )	CallScriptFunction( x402279_g_FuBenScriptId, "OpenWuLaoDaDieTimer", sceneId, 4, x402279_g_ScriptId, x, z )	--The setting has already challenged Wu Boss....	CallScriptFunction( x402279_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "WuLaoDa", 2 )	--If you have not challenged Gemini, you can challenge Gemini....	if 2 ~= CallScriptFunction( x402279_g_FuBenScriptId, "GetBossBattleFlag", sceneId, "ShuangZi" )	then		CallScriptFunction( x402279_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "ShuangZi", 1 )	end	-- zchw global announcement	local	playerName	= GetName( sceneId, killerId )		--The one who kills the monster is a pet, then get the name of its owner....	local playerID = killerId	local objType = GetCharacterType( sceneId, killerId )	if objType == 3 then		playerID = GetPetCreator( sceneId, killerId )		playerName = GetName( sceneId, playerID )	end		--If the player is in a team, get the captain's name....	local leaderID = GetTeamLeader( sceneId, playerID )	if leaderID ~= -1 then		playerName = GetName( sceneId, leaderID )	end		if playerName ~= nil then		str = format("#{_INFOUSR%s}#{XPM_8724_4}", playerName);      -- Boss Wu		AddGlobalCountNews( sceneId, str )	endend--**********************************--Reset AI....--**********************************function x402279_ResetMyAI( sceneId, selfId )	--reset parameters....	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, x402279_SkillABC_CD )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 1 )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, x402279_SkillD_CD )	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag, 0 )	--Clear the buff of D for everyone....	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 then			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402279_BuffD )		end	endend--**********************************--ABC skill heartbeat....--**********************************function x402279_TickSkillABC( sceneId, selfId, nTick )	--Update skill CD....	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC )	if cd > nTick then		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, cd-nTick )		return 0	else		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, x402279_SkillABC_CD-(nTick-cd) )		local CurSkill = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex )		if CurSkill == 1 then			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 2 )			return x402279_UseSkillA( sceneId, selfId )		elseif CurSkill == 2 then			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 3 )			return x402279_UseSkillB( sceneId, selfId )		elseif CurSkill == 3 then			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 1 )			return x402279_UseSkillC( sceneId, selfId )		end	endend--**********************************--D skill heartbeat....--**********************************function x402279_TickSkillD( sceneId, selfId, nTick )	--Update skill CD....	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD )	if cd > nTick then		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, cd-nTick )		return 0	else		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, x402279_SkillD_CD-(nTick-cd) )		return x402279_UseSkillD( sceneId, selfId )	endend--**********************************-- Use A skill....--**********************************function x402279_UseSkillA( sceneId, selfId )	local x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillA, selfId, x, z, 0, 1 )	return 1end--**********************************-- Use B skill....--**********************************function x402279_UseSkillB( sceneId, selfId )	-- List of active players in the instance....	local PlayerList = {}	-- Add valid people to the list....	local numPlayer = 0	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then			PlayerList[numPlayer+1] = nHumanId			numPlayer = numPlayer + 1		end	end	-- Randomly pick a player....	if numPlayer <= 0 then		return 0	end	local PlayerId = PlayerList[ random(numPlayer) ]	-- Use skills on it....	local x,z = GetWorldPos( sceneId, PlayerId )	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillB, PlayerId, x, z, 0, 1 )	--Add buff to it....	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, PlayerId, x402279_BuffB, 0 )	return 1end--**********************************-- Use C skills....--**********************************function x402279_UseSkillC( sceneId, selfId )	-- get the current enemy....	local enemyId = GetMonsterCurEnemy( sceneId, selfId )	if enemyId <= 0 then		return 0	end	if GetCharacterType( sceneId, enemyId ) == 3 then		enemyId = GetPetCreator( sceneId, enemyId )	end	--Put a trap under the enemy's feet....	local x,z = GetWorldPos( sceneId, enemyId )	CreateSpecialObjByDataIndex( sceneId, selfId, x402279_SpeObjC, x, z, 0 )	-- Shout out....	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_17}" )	-- Use an empty skill with only special effects on yourself....	x,z = GetWorldPos( sceneId, selfId )	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillC, selfId, x, z, 0, 1 )	return 1end--**********************************-- Use D skills....--**********************************function x402279_UseSkillD( sceneId, selfId )	--Add buff to everyone in the copy....	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then			LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, nHumanId, x402279_BuffD, 0 )		end	endend--**********************************-- OnTimer, the black boss death timer....--Used to control the delay in spawning the defeated Wu Boss after death....--**********************************function x402279_OnHaDaBaDieTimer( sceneId, step, posX, posY )	if 1 == step then		--Create the defeated Wu Boss NPC....		local MstId = CallScriptFunction( x402279_g_FuBenScriptId, "CreateBOSS", sceneId, "WuLaoDaLoss_NPC", posX, posY )		SetUnitReputationID( sceneId, MstId, MstId, 0 )		SetPatrolId(sceneId, MstId, 0)	endend
+--飘渺峰 乌老大AI
+
+--A	【金灯万盏】毒属性群攻....
+--B 【麻痹毒药】普通技能....全副本随机挑一个人对其释放空技能....再给其加个buff....
+--C 【绿波香露】对自己使用一个空技能....同时在当前敌人脚下放个陷阱....
+--D 【毒性变换】每隔5秒给全副本所有人加一个buff....
+
+--全程都带有免疫制定技能的buff....
+--20秒后开始循环释放ABC技能....冷却20秒....
+--每5秒使用一次D....
+--BOSS死亡或脱离战斗会给所有人清除D的buff....
+
+
+--脚本号
+x402279_g_ScriptId	= 402279
+
+--副本逻辑脚本号....
+x402279_g_FuBenScriptId = 402276
+
+--免疫Buff....
+x402279_Buff_MianYi1	= 10472	--免疫一些负面效果....
+x402279_Buff_MianYi2	= 10471	--免疫普通隐身....
+
+--ABC技能....
+x402279_SkillA			= 1111	--简单版缥缈峰使用伤害降低了的版本....
+x402279_SkillB			= 1112	--简单版缥缈峰使用伤害降低了的版本....
+x402279_BuffB				= 19803	--简单版缥缈峰使用伤害降低了的版本....
+x402279_SkillC			= 1113	--简单版缥缈峰使用伤害降低了的版本....
+x402279_SpeObjC			= 72	--简单版缥缈峰使用伤害降低了的版本....
+x402279_SkillABC_CD	=	20000
+
+--D技能....
+x402279_BuffD				= 19801	--简单版缥缈峰使用伤害降低了的版本....
+x402279_SkillD_CD		= 5000
+
+
+--AI Index....
+x402279_IDX_CD_SkillABC		= 1	--ABC技能的CD....
+x402279_IDX_CurSkillIndex	= 2	--接下来该使用ABC中的哪个技能....
+x402279_IDX_CD_SkillD			= 3	--D技能的CD....
+
+x402279_IDX_CombatFlag 		= 1	--是否处于战斗状态的标志....
+
+
+--**********************************
+--初始化....
+--**********************************
+function x402279_OnInit(sceneId, selfId)
+	--重置AI....
+	x402279_ResetMyAI( sceneId, selfId )
+
+end
+
+
+--**********************************
+--心跳....
+--**********************************
+function x402279_OnHeartBeat(sceneId, selfId, nTick)
+
+	--检测是不是死了....
+	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then
+		return
+	end
+
+	--检测是否不在战斗状态....
+	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag ) then
+		return
+	end
+
+	--ABC技能心跳....
+	if 1 == x402279_TickSkillABC( sceneId, selfId, nTick ) then
+		return
+	end
+
+	--D技能心跳....
+	if 1 == x402279_TickSkillD( sceneId, selfId, nTick ) then
+		return
+	end
+
+end
+
+
+--**********************************
+--进入战斗....
+--**********************************
+function x402279_OnEnterCombat(sceneId, selfId, enmeyId)
+
+	--加初始buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402279_Buff_MianYi1, 0 )
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402279_Buff_MianYi2, 0 )
+
+	--重置AI....
+	x402279_ResetMyAI( sceneId, selfId )
+
+	--设置进入战斗状态....
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag, 1 )
+
+end
+
+
+--**********************************
+--离开战斗....
+--**********************************
+function x402279_OnLeaveCombat(sceneId, selfId)
+
+	--重置AI....
+	x402279_ResetMyAI( sceneId, selfId )
+
+	--删除自己....
+	LuaFnDeleteMonster( sceneId, selfId )
+
+	--创建对话NPC....
+	local MstId = CallScriptFunction( x402279_g_FuBenScriptId, "CreateBOSS", sceneId, "WuLaoDa_NPC", -1, -1 )
+	SetUnitReputationID( sceneId, MstId, MstId, 0 )
+
+end
+
+
+--**********************************
+--杀死敌人....
+--**********************************
+function x402279_OnKillCharacter(sceneId, selfId, targetId)
+
+end
+
+
+--**********************************
+--死亡....
+--**********************************
+function x402279_OnDie( sceneId, selfId, killerId )
+
+	--重置AI....
+	x402279_ResetMyAI( sceneId, selfId )
+
+	--删除自己....
+	SetCharacterDieTime( sceneId, selfId, 3000 )
+
+	--开启乌老大死亡的计时器....
+	local x,z = GetWorldPos( sceneId, selfId )
+	CallScriptFunction( x402279_g_FuBenScriptId, "OpenWuLaoDaDieTimer", sceneId, 4, x402279_g_ScriptId, x, z )
+
+	--设置已经挑战过乌老大....
+	CallScriptFunction( x402279_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "WuLaoDa", 2 )
+
+	--如果还没有挑战过双子则可以挑战双子....
+	if 2 ~= CallScriptFunction( x402279_g_FuBenScriptId, "GetBossBattleFlag", sceneId, "ShuangZi" )	then
+		CallScriptFunction( x402279_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "ShuangZi", 1 )
+	end
+	-- zchw 全球公告
+	local	playerName	= GetName( sceneId, killerId )
+	
+	--杀死怪物的是宠物则获取其主人的名字....
+	local playerID = killerId
+	local objType = GetCharacterType( sceneId, killerId )
+	if objType == 3 then
+		playerID = GetPetCreator( sceneId, killerId )
+		playerName = GetName( sceneId, playerID )
+	end
+	
+	--如果玩家组队了则获取队长的名字....
+	local leaderID = GetTeamLeader( sceneId, playerID )
+	if leaderID ~= -1 then
+		playerName = GetName( sceneId, leaderID )
+	end
+	
+	if playerName ~= nil then
+		str = format("#{_INFOUSR%s}#{XPM_8724_4}", playerName);      --乌老大
+		AddGlobalCountNews( sceneId, str )
+	end
+
+end
+
+
+--**********************************
+--重置AI....
+--**********************************
+function x402279_ResetMyAI( sceneId, selfId )
+
+	--重置参数....
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, x402279_SkillABC_CD )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 1 )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, x402279_SkillD_CD )
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402279_IDX_CombatFlag, 0 )
+
+	--给所有人清除D的buff....
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 then
+			LuaFnCancelSpecificImpact( sceneId, nHumanId, x402279_BuffD )
+		end
+	end
+
+end
+
+
+--**********************************
+--ABC技能心跳....
+--**********************************
+function x402279_TickSkillABC( sceneId, selfId, nTick )
+
+	--更新技能CD....
+	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC )
+	if cd > nTick then
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, cd-nTick )
+		return 0
+
+	else
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillABC, x402279_SkillABC_CD-(nTick-cd) )
+
+		local CurSkill = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex )
+		if CurSkill == 1 then
+			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 2 )
+			return x402279_UseSkillA( sceneId, selfId )
+		elseif CurSkill == 2 then
+			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 3 )
+			return x402279_UseSkillB( sceneId, selfId )
+		elseif CurSkill == 3 then
+			MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CurSkillIndex, 1 )
+			return x402279_UseSkillC( sceneId, selfId )
+		end
+
+	end
+
+end
+
+
+--**********************************
+--D技能心跳....
+--**********************************
+function x402279_TickSkillD( sceneId, selfId, nTick )
+
+	--更新技能CD....
+	local cd = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD )
+	if cd > nTick then
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, cd-nTick )
+		return 0
+
+	else
+
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402279_IDX_CD_SkillD, x402279_SkillD_CD-(nTick-cd) )
+		return x402279_UseSkillD( sceneId, selfId )
+
+	end
+
+end
+
+
+--**********************************
+--使用A技能....
+--**********************************
+function x402279_UseSkillA( sceneId, selfId )
+
+	local x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillA, selfId, x, z, 0, 1 )
+	return 1
+
+end
+
+
+--**********************************
+--使用B技能....
+--**********************************
+function x402279_UseSkillB( sceneId, selfId )
+
+	--副本中有效的玩家的列表....
+	local PlayerList = {}
+
+	--将有效的人加入列表....
+	local numPlayer = 0
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then
+			PlayerList[numPlayer+1] = nHumanId
+			numPlayer = numPlayer + 1
+		end
+	end
+
+	--随机挑选一个玩家....
+	if numPlayer <= 0 then
+		return 0
+	end
+	local PlayerId = PlayerList[ random(numPlayer) ]
+
+	--对其使用技能....
+	local x,z = GetWorldPos( sceneId, PlayerId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillB, PlayerId, x, z, 0, 1 )
+
+	--给其加buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, PlayerId, x402279_BuffB, 0 )
+
+	return 1
+
+end
+
+
+--**********************************
+--使用C技能....
+--**********************************
+function x402279_UseSkillC( sceneId, selfId )
+
+	--获得当前敌人....
+	local enemyId = GetMonsterCurEnemy( sceneId, selfId )
+	if enemyId <= 0 then
+		return 0
+	end
+	if GetCharacterType( sceneId, enemyId ) == 3 then
+		enemyId = GetPetCreator( sceneId, enemyId )
+	end
+
+	--在该敌人脚下放个陷阱....
+	local x,z = GetWorldPos( sceneId, enemyId )
+	CreateSpecialObjByDataIndex( sceneId, selfId, x402279_SpeObjC, x, z, 0 )
+
+	--喊话....
+	MonsterTalk( sceneId, -1, "", "#{PMF_20080530_17}" )
+
+	--对自己使用一个只有特效的空技能....
+	x,z = GetWorldPos( sceneId, selfId )
+	LuaFnUnitUseSkill( sceneId, selfId, x402279_SkillC, selfId, x, z, 0, 1 )
+
+	return 1
+
+end
+
+
+--**********************************
+--使用D技能....
+--**********************************
+function x402279_UseSkillD( sceneId, selfId )
+
+	--给副本里所有人加buff....
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then
+			LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, nHumanId, x402279_BuffD, 0 )
+		end
+	end
+
+end
+
+
+--**********************************
+--乌老大死亡计时器OnTimer....
+--用于控制死亡后延迟刷出战败乌老大....
+--**********************************
+function x402279_OnHaDaBaDieTimer( sceneId, step, posX, posY )
+
+	if 1 == step then
+		--创建战败的乌老大NPC....
+		local MstId = CallScriptFunction( x402279_g_FuBenScriptId, "CreateBOSS", sceneId, "WuLaoDaLoss_NPC", posX, posY )
+		SetUnitReputationID( sceneId, MstId, MstId, 0 )
+		SetPatrolId(sceneId, MstId, 0)
+	end
+
+end

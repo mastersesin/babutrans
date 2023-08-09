@@ -1,1 +1,320 @@
---Piao Miao Peak Ha Da Ba AI--A [Where to go] Use an empty skill for yourself...all non-Shaolin players add body buff....--B [The Pain of Suspended Pivot] Give yourself the double attack buff of being unable to move....--C [Qihai Pain] Give yourself a buff that doubles the damage you receive....--D [Sizhukong Pain] Give yourself the buff that is provoked by the player....--E [Crazy] Add a fatal buff to yourself....--The whole process has buffs that are immune to formulating skills....--Start to use A skill after 20 seconds...cool down for 20 seconds....--After 25 seconds, the BCD skills will be released cyclically....The cooldowns are 20.::134è134::::134ú134::...--Enter berserk mode after 5 minutes...stop using ABCD...clear the buff of ABCD...use E skill....--script numberx402277_g_ScriptId	= 402277--Copy logic script number....x402277_g_FuBenScriptId = 402276--buff....x402277_Buff_MianYi1	= 10472	-- Immune to some negative effects....x402277_Buff_MianYi2	= 10471	-- Immune to normal invisibility....x402277_Skill_A			=	1024x402277_Buff_A			= 10230x402277_Skill_B			=	1025x402277_Buff_B			= 10231x402277_Skill_C			=	1026x402277_Buff_C			= 10232x402277_Skill_D			=	1027x402277_Buff_D			= 10233x402277_Buff_E1			= 10234x402277_Buff_E2			= 10235--Skill release schedule....x402277_UseSkillList ={	{ 20,  "A" },	{ 25,  "B" },	{ 40,  "A" },	{ 45,  "C" },	{ 60,  "A" },	{ 65,  "D" },	{ 80,  "A" },	{ 95,  "B" },	{ 100, "A" },	{ 115, "C" },	{ 120, "A" },	{ 135, "D" },	{ 140, "A" },	{ 160, "A" },	{ 165, "B" },	{ 180, "A" },	{ 185, "C" },	{ 200, "A" },	{ 205, "D" },	{ 220, "A" },	{ 235, "B" },	{ 240, "A" },	{ 255, "C" },	{ 260, "A" },	{ 275, "D" },	{ 280, "A" },	{ 300, "E" }}--AI Index....x402277_IDX_CombatTime		= 1	--The timer for entering the battle...used to record how long it has been in the battle....x402277_IDX_UseSkillIndex	= 2	--The next thing to use is the first skill in the skill table....x402277_IDX_CombatFlag 			= 1	--Whether it is a sign of combat status....x402277_IDX_IsKuangBaoMode	= 2	-- flag for berserk mode....--**********************************--initialization....--**********************************function x402277_OnInit(sceneId, selfId)	--Reset AI....	x402277_ResetMyAI( sceneId, selfId )end--**********************************--heartbeat....--**********************************function x402277_OnHeartBeat(sceneId, selfId, nTick)	-- Check if it is dead....	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then		return	end	-- Check if not in combat state....	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag ) then		return	end	--Rage state does not need logic....	if 1 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode ) then		return	end	--==================================	--Release skills according to the playlist....	--==================================	--Get the battle time and the number of items that have been executed in the skill table....	local CombatTime = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime )	local NextSkillIndex = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex )	--Accumulate the time to enter the battle....	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime, CombatTime + nTick )	--If the entire skill table has been executed, the skill will not be used....	if NextSkillIndex < 1 or NextSkillIndex > getn( x402277_UseSkillList ) then		return	end	--Use the skill if it's time to use it....	local SkillData = x402277_UseSkillList[NextSkillIndex]	if ( CombatTime + nTick ) >= SkillData[1]*1000 then		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex, NextSkillIndex+1 )		x402277_UseMySkill( sceneId, selfId, SkillData[2] )	endend--**********************************-- enter the battle....--**********************************function x402277_OnEnterCombat(sceneId, selfId, enmeyId)	--The simple version of Misty Peak does not need to add initial buff....	--LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_MianYi1, 0 )	--LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_MianYi2, 0 )	--Reset AI....	x402277_ResetMyAI( sceneId, selfId )	--Set to enter the combat state....	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag, 1 )end--**********************************--leave the fight....--**********************************function x402277_OnLeaveCombat(sceneId, selfId)	--Reset AI....	x402277_ResetMyAI( sceneId, selfId )	--delete self....	LuaFnDeleteMonster( sceneId, selfId )	--Create a dialogue NPC....	local MstId = CallScriptFunction( x402277_g_FuBenScriptId, "CreateBOSS", sceneId, "HaDaBa_NPC", -1, -1 )	SetUnitReputationID( sceneId, MstId, MstId, 0 )end--**********************************-- kill enemies....--**********************************function x402277_OnKillCharacter(sceneId, selfId, targetId)end--**********************************--die....--**********************************function x402277_OnDie( sceneId, selfId, killerId )	--Reset AI....	x402277_ResetMyAI( sceneId, selfId )	--The setting has already challenged Ha Daba....	CallScriptFunction( x402277_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "HaDaBa", 2 )	--If you haven't challenged Sangtu Lord yet, you can challenge Sangtu Lord....	if 2 ~= CallScriptFunction( x402277_g_FuBenScriptId, "GetBossBattleFlag", sceneId, "SangTuGong" ) then		CallScriptFunction( x402277_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "SangTuGong", 1 )	end	-- zchw global announcement	local	playerName	= GetName( sceneId, killerId )		--The one who kills the monster is a pet, then get the name of its owner....	local playerID = killerId	local objType = GetCharacterType( sceneId, killerId )	if objType == 3 then		playerID = GetPetCreator( sceneId, killerId )		playerName = GetName( sceneId, playerID )	end		--If the player is in a team, get the captain's name....	local leaderID = GetTeamLeader( sceneId, playerID )	if leaderID ~= -1 then		playerName = GetName( sceneId, leaderID )	end		if playerName ~= nil then		str = format("#{XPM_8724_1}#{_INFOUSR%s}#{XPM_8724_2}", playerName); --Ha Daba		AddGlobalCountNews( sceneId, str )	end	end--**********************************--Reset AI....--**********************************function x402277_ResetMyAI( sceneId, selfId )	--reset parameters....	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime, 0 )	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex, 1 )	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode, 0 )	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag, 0 )	--clear buff....	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_B )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_C )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_D )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_E1 )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_E2 )end--**********************************--Boss uses skills....--**********************************function x402277_UseMySkill( sceneId, selfId, skill )	if skill == "A" then		x402277_SkillA_NaLiZou( sceneId, selfId )	elseif skill == "B" then		MonsterTalk(sceneId, -1, "", "#{PMF_20080530_06}" )		local x,z = GetWorldPos( sceneId, selfId )		LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_B, selfId, x, z, 0, 0 )		LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_B, 2000 )	elseif skill == "C" then		MonsterTalk(sceneId, -1, "", "#{PMF_20080530_07}" )		local x,z = GetWorldPos( sceneId, selfId )		LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_C, selfId, x, z, 0, 0 )		LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_C, 0 )	elseif skill == "D" then		local enemyId = GetMonsterCurEnemy( sceneId, selfId )		if enemyId > 0 then			if GetCharacterType( sceneId, enemyId ) == 3 then				enemyId = GetPetCreator( sceneId, enemyId )			end			MonsterTalk(sceneId, -1, "", "#{PMF_20080530_08}" )			local x,z = GetWorldPos( sceneId, selfId )			LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_D, selfId, x, z, 0, 0 )			LuaFnSendSpecificImpactToUnit( sceneId, selfId, enemyId, selfId, x402277_Buff_D, 0 )		end	elseif skill == "E" then		MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode, 1 )		x402277_SkillE_KuangBao( sceneId, selfId )	endend--**********************************--Where to go for skills...add buffs to non-Shaolin players....--**********************************function x402277_SkillA_NaLiZou( sceneId, selfId )	MonsterTalk(sceneId, -1, "", "#{PMF_20080530_09}" )	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)	for i=0, nHumanCount-1 do		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then			if GetMenPai(sceneId,nHumanId) ~= MP_SHAOLIN then				LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, nHumanId, x402277_Buff_A, 0 )				local x,z = GetWorldPos( sceneId, selfId )				LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_A, selfId, x, z, 0, 0 )			end		end	endend--**********************************--Rage skill....--**********************************function x402277_SkillE_KuangBao( sceneId, selfId )	-- Cancel BCD's buff....	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_B )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_C )	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_D )	--add berserk buff....	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_E1, 0 )	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_E2, 0 )end
+--Æ®Ãì·å ¹þ´ó°ÔAI
+
+--A ¡¾ÄÄÀï×ß¡¿¸ø×Ô¼ºÓÃÒ»¸ö¿Õ¼¼ÄÜ....ËùÓÐ·ÇÉÙÁÖÍæ¼Ò¼Ó¶¨Éíbuff....
+--B ¡¾ÐüÊàÖ®Í´¡¿¸ø×Ô¼º¼Ó²»ÄÜÒÆ¶¯Ë«±¶¹¥»÷buff....
+--C ¡¾Æøº£Ö®Í´¡¿¸ø×Ô¼º¼ÓÊÜµ½ÉËº¦¼Ó±¶buff....
+--D ¡¾Ë¿Öñ¿ÕÖ®Í´¡¿¸ø×Ô¼º¼Ó±»Íæ¼ÒÌôÐÆµÄbuff....
+--E ¡¾·è¿ñ¡¿¸ø×Ô¼º¼ÓÒ»»÷ÖÂÃübuff....
+
+--È«³Ì¶¼´øÓÐÃâÒßÖÆ¶¨¼¼ÄÜµÄbuff....
+--20Ãëºó¿ªÊ¼Ê¹ÓÃA¼¼ÄÜ....ÀäÈ´20Ãë....
+--25Ãëºó¿ªÊ¼Ñ­»·ÊÍ·ÅBCD¼¼ÄÜ....ÀäÈ´·Ö±ðÊÇ20..20..30....
+--5·ÖÖÓºó½øÈë¿ñ±©Ä£Ê½....Í£Ö¹Ê¹ÓÃABCD....Çå³ýABCDµÄbuff....Ê¹ÓÃE¼¼ÄÜ....
+
+--½Å±¾ºÅ
+x402277_g_ScriptId	= 402277
+
+--¸±±¾Âß¼­½Å±¾ºÅ....
+x402277_g_FuBenScriptId = 402276
+
+--buff....
+x402277_Buff_MianYi1	= 10472	--ÃâÒßÒ»Ð©¸ºÃæÐ§¹û....
+x402277_Buff_MianYi2	= 10471	--ÃâÒßÆÕÍ¨ÒþÉí....
+x402277_Skill_A			=	1024
+x402277_Buff_A			= 10230
+x402277_Skill_B			=	1025
+x402277_Buff_B			= 10231
+x402277_Skill_C			=	1026
+x402277_Buff_C			= 10232
+x402277_Skill_D			=	1027
+x402277_Buff_D			= 10233
+x402277_Buff_E1			= 10234
+x402277_Buff_E2			= 10235
+
+--¼¼ÄÜÊÍ·ÅÊ±¼ä±í....
+x402277_UseSkillList =
+{
+	{ 20,  "A" },
+	{ 25,  "B" },
+	{ 40,  "A" },
+	{ 45,  "C" },
+	{ 60,  "A" },
+	{ 65,  "D" },
+	{ 80,  "A" },
+	{ 95,  "B" },
+	{ 100, "A" },
+	{ 115, "C" },
+	{ 120, "A" },
+	{ 135, "D" },
+	{ 140, "A" },
+	{ 160, "A" },
+	{ 165, "B" },
+	{ 180, "A" },
+	{ 185, "C" },
+	{ 200, "A" },
+	{ 205, "D" },
+	{ 220, "A" },
+	{ 235, "B" },
+	{ 240, "A" },
+	{ 255, "C" },
+	{ 260, "A" },
+	{ 275, "D" },
+	{ 280, "A" },
+	{ 300, "E" }
+}
+
+
+--AI Index....
+x402277_IDX_CombatTime		= 1	--½øÈëÕ½¶·µÄ¼ÆÊ±Æ÷....ÓÃÓÚ¼ÇÂ¼ÒÑ¾­½øÈëÕ½¶·¶à³¤Ê±¼äÁË....
+x402277_IDX_UseSkillIndex	= 2	--½ÓÏÂÀ´¸ÃÊ¹ÓÃ¼¼ÄÜ±íÖÐµÄµÚ¼¸¸ö¼¼ÄÜ....
+
+x402277_IDX_CombatFlag 			= 1	--ÊÇ·ñ´¦ÓÚÕ½¶·×´Ì¬µÄ±êÖ¾....
+x402277_IDX_IsKuangBaoMode	= 2	--ÊÇ·ñ´¦ÓÚ¿ñ±©Ä£Ê½µÄ±êÖ¾....
+
+
+--**********************************
+--³õÊ¼»¯....
+--**********************************
+function x402277_OnInit(sceneId, selfId)
+	--ÖØÖÃAI....
+	x402277_ResetMyAI( sceneId, selfId )
+end
+
+
+--**********************************
+--ÐÄÌø....
+--**********************************
+function x402277_OnHeartBeat(sceneId, selfId, nTick)
+
+	--¼ì²âÊÇ²»ÊÇËÀÁË....
+	if LuaFnIsCharacterLiving(sceneId, selfId) ~= 1 then
+		return
+	end
+
+	--¼ì²âÊÇ·ñ²»ÔÚÕ½¶·×´Ì¬....
+	if 0 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag ) then
+		return
+	end
+
+	--¿ñ±©×´Ì¬²»ÐèÒª×ßÂß¼­....
+	if 1 == MonsterAI_GetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode ) then
+		return
+	end
+
+	--==================================
+	--¸ù¾Ý½ÚÄ¿µ¥ÊÍ·Å¼¼ÄÜ....
+	--==================================
+
+	--»ñµÃÕ½¶·Ê±¼äºÍÒÑ¾­Ö´ÐÐµ½¼¼ÄÜ±íÖÐµÄµÚ¼¸Ïî....
+	local CombatTime = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime )
+	local NextSkillIndex = MonsterAI_GetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex )
+	--ÀÛ¼Ó½øÈëÕ½¶·µÄÊ±¼ä....
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime, CombatTime + nTick )
+
+	--Èç¹ûÒÑ¾­Ö´ÐÐÍêÕûÕÅ¼¼ÄÜ±íÔò²»Ê¹ÓÃ¼¼ÄÜ....
+	if NextSkillIndex < 1 or NextSkillIndex > getn( x402277_UseSkillList ) then
+		return
+	end
+
+	--Èç¹ûÒÑ¾­µ½ÁËÓÃÕâ¸ö¼¼ÄÜµÄÊ±¼äÔòÊ¹ÓÃ¼¼ÄÜ....
+	local SkillData = x402277_UseSkillList[NextSkillIndex]
+	if ( CombatTime + nTick ) >= SkillData[1]*1000 then
+		MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex, NextSkillIndex+1 )
+		x402277_UseMySkill( sceneId, selfId, SkillData[2] )
+	end
+
+
+end
+
+
+--**********************************
+--½øÈëÕ½¶·....
+--**********************************
+function x402277_OnEnterCombat(sceneId, selfId, enmeyId)
+
+	--¼òµ¥°æçÎç¿·å²»ÐèÒª¼Ó³õÊ¼buff....
+	--LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_MianYi1, 0 )
+	--LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_MianYi2, 0 )
+
+	--ÖØÖÃAI....
+	x402277_ResetMyAI( sceneId, selfId )
+
+	--ÉèÖÃ½øÈëÕ½¶·×´Ì¬....
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag, 1 )
+
+end
+
+
+--**********************************
+--Àë¿ªÕ½¶·....
+--**********************************
+function x402277_OnLeaveCombat(sceneId, selfId)
+
+	--ÖØÖÃAI....
+	x402277_ResetMyAI( sceneId, selfId )
+
+	--É¾³ý×Ô¼º....
+	LuaFnDeleteMonster( sceneId, selfId )
+
+	--´´½¨¶Ô»°NPC....
+	local MstId = CallScriptFunction( x402277_g_FuBenScriptId, "CreateBOSS", sceneId, "HaDaBa_NPC", -1, -1 )
+	SetUnitReputationID( sceneId, MstId, MstId, 0 )
+
+end
+
+
+--**********************************
+--É±ËÀµÐÈË....
+--**********************************
+function x402277_OnKillCharacter(sceneId, selfId, targetId)
+
+end
+
+
+--**********************************
+--ËÀÍö....
+--**********************************
+function x402277_OnDie( sceneId, selfId, killerId )
+
+	--ÖØÖÃAI....
+	x402277_ResetMyAI( sceneId, selfId )
+
+	--ÉèÖÃÒÑ¾­ÌôÕ½¹ý¹þ´ó°Ô....
+	CallScriptFunction( x402277_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "HaDaBa", 2 )
+
+	--Èç¹û»¹Ã»ÓÐÌôÕ½¹ýÉ£ÍÁ¹«Ôò¿ÉÒÔÌôÕ½É£ÍÁ¹«....
+	if 2 ~= CallScriptFunction( x402277_g_FuBenScriptId, "GetBossBattleFlag", sceneId, "SangTuGong" ) then
+		CallScriptFunction( x402277_g_FuBenScriptId, "SetBossBattleFlag", sceneId, "SangTuGong", 1 )
+	end
+	-- zchw È«Çò¹«¸æ
+	local	playerName	= GetName( sceneId, killerId )
+	
+	--É±ËÀ¹ÖÎïµÄÊÇ³èÎïÔò»ñÈ¡ÆäÖ÷ÈËµÄÃû×Ö....
+	local playerID = killerId
+	local objType = GetCharacterType( sceneId, killerId )
+	if objType == 3 then
+		playerID = GetPetCreator( sceneId, killerId )
+		playerName = GetName( sceneId, playerID )
+	end
+	
+	--Èç¹ûÍæ¼Ò×é¶ÓÁËÔò»ñÈ¡¶Ó³¤µÄÃû×Ö....
+	local leaderID = GetTeamLeader( sceneId, playerID )
+	if leaderID ~= -1 then
+		playerName = GetName( sceneId, leaderID )
+	end
+	
+	if playerName ~= nil then
+		str = format("#{XPM_8724_1}#{_INFOUSR%s}#{XPM_8724_2}", playerName); --¹þ´ó°Ô
+		AddGlobalCountNews( sceneId, str )
+	end
+	
+end
+
+
+--**********************************
+--ÖØÖÃAI....
+--**********************************
+function x402277_ResetMyAI( sceneId, selfId )
+
+	--ÖØÖÃ²ÎÊý....
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_CombatTime, 0 )
+	MonsterAI_SetIntParamByIndex( sceneId, selfId, x402277_IDX_UseSkillIndex, 1 )
+
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode, 0 )
+	MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_CombatFlag, 0 )
+
+	--Çå³ýbuff....
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_B )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_C )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_D )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_E1 )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_E2 )
+
+end
+
+
+--**********************************
+--BOSSÊ¹ÓÃ¼¼ÄÜ....
+--**********************************
+function x402277_UseMySkill( sceneId, selfId, skill )
+
+	if skill == "A" then
+
+		x402277_SkillA_NaLiZou( sceneId, selfId )
+
+	elseif skill == "B" then
+
+		MonsterTalk(sceneId, -1, "", "#{PMF_20080530_06}" )
+		local x,z = GetWorldPos( sceneId, selfId )
+		LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_B, selfId, x, z, 0, 0 )
+		LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_B, 2000 )
+
+	elseif skill == "C" then
+
+		MonsterTalk(sceneId, -1, "", "#{PMF_20080530_07}" )
+		local x,z = GetWorldPos( sceneId, selfId )
+		LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_C, selfId, x, z, 0, 0 )
+		LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_C, 0 )
+
+	elseif skill == "D" then
+
+		local enemyId = GetMonsterCurEnemy( sceneId, selfId )
+		if enemyId > 0 then
+			if GetCharacterType( sceneId, enemyId ) == 3 then
+				enemyId = GetPetCreator( sceneId, enemyId )
+			end
+			MonsterTalk(sceneId, -1, "", "#{PMF_20080530_08}" )
+			local x,z = GetWorldPos( sceneId, selfId )
+			LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_D, selfId, x, z, 0, 0 )
+			LuaFnSendSpecificImpactToUnit( sceneId, selfId, enemyId, selfId, x402277_Buff_D, 0 )
+		end
+
+	elseif skill == "E" then
+
+		MonsterAI_SetBoolParamByIndex( sceneId, selfId, x402277_IDX_IsKuangBaoMode, 1 )
+		x402277_SkillE_KuangBao( sceneId, selfId )
+
+	end
+
+end
+
+
+--**********************************
+--ÄÄÀï×ß¼¼ÄÜ....¶Ô·ÇÉÙÁÖÍæ¼Ò¼Óbuff....
+--**********************************
+function x402277_SkillA_NaLiZou( sceneId, selfId )
+
+	MonsterTalk(sceneId, -1, "", "#{PMF_20080530_09}" )
+
+	local nHumanCount = LuaFnGetCopyScene_HumanCount(sceneId)
+	for i=0, nHumanCount-1 do
+
+		local nHumanId = LuaFnGetCopyScene_HumanObjId(sceneId, i)
+		if LuaFnIsObjValid(sceneId, nHumanId) == 1 and LuaFnIsCanDoScriptLogic(sceneId, nHumanId) == 1 and LuaFnIsCharacterLiving(sceneId, nHumanId) == 1 then
+			if GetMenPai(sceneId,nHumanId) ~= MP_SHAOLIN then
+				LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, nHumanId, x402277_Buff_A, 0 )
+				local x,z = GetWorldPos( sceneId, selfId )
+				LuaFnUnitUseSkill( sceneId, selfId, x402277_Skill_A, selfId, x, z, 0, 0 )
+			end
+		end
+
+	end
+
+end
+
+
+--**********************************
+--¿ñ±©¼¼ÄÜ....
+--**********************************
+function x402277_SkillE_KuangBao( sceneId, selfId )
+
+	--È¡ÏûBCDµÄbuff....
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_B )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_C )
+	LuaFnCancelSpecificImpact( sceneId, selfId, x402277_Buff_D )
+
+	--¼Ó¿ñ±©buff....
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_E1, 0 )
+	LuaFnSendSpecificImpactToUnit( sceneId, selfId, selfId, selfId, x402277_Buff_E2, 0 )
+
+end
